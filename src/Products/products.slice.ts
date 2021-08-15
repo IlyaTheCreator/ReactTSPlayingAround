@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit" // redux toolkit is the boss here
 import { RootState } from "../store"
 
-type Product = {
+export interface Product {
     title: string;
     price: number;
     id: string;
@@ -22,14 +22,17 @@ const productsSlice = createSlice({
     // reducers are simply functions which return new state based on an action and its payload
     reducers: {
         addProduct: (state, action: PayloadAction<Product>) => {
-            return [action.payload, ...state]
+            state.push(action.payload)
+        },
+        removeProduct: (state, action: PayloadAction<string>) => {
+            return state.filter(product => product.id !== action.payload)
         }
     }
 })
 // THE SLICE
 
 // exporting the slice's actions so we can dispatch them later in our components
-export const { addProduct } = productsSlice.actions
+export const { addProduct, removeProduct } = productsSlice.actions
 
 // exporting necessary selectors
 export const getProductsSelector = (state: RootState) => state.products
