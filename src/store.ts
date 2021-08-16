@@ -4,7 +4,7 @@ import cart from "./Cart/cart.slice"
 
 const store = configureStore({
     reducer: {
-        products,
+        products, 
         cart
     }
 })
@@ -48,6 +48,8 @@ const store = configureStore({
     ReturnType does not accept a function. It accepts a function type.
 */
 export type RootState = ReturnType<typeof store.getState>
+
+// this type is for store.hooks.ts file
 export type AppDispatch = typeof store.dispatch 
 
 export default store

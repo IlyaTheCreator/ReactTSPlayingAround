@@ -1,7 +1,6 @@
 import { useAppDispatch } from "../store.hooks"
 import { CartProduct as ICartProduct, removeFromCart } from "./cart.slice"
 
-
 const CartProduct: React.FC<ICartProduct & { key: string }> = ({ title, price, id, amount }) => {
     const dispatch = useAppDispatch()
 
