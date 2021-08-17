@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit" // redux toolkit is the boss here
+import { createAsyncThunk, createSlice, PayloadAction, createEntityAdapter } from "@reduxjs/toolkit" // redux toolkit is the boss here
 import validateProduct from "../fake.api"
 import { RootState } from "../store"
 
@@ -15,7 +15,6 @@ export enum ValidationState {
 }
 
 interface ProductSliceState {
-    products: Product[],
     validationState?: ValidationState,
     errorMessage?: string
 }
@@ -36,26 +35,27 @@ const initialProducts: Product[] = [
     { title: "Hell Let Loose", price: 55, id: "hll" },
 ]
 
-const initialState: ProductSliceState = {
-    products: initialProducts,
-    validationState: undefined,
-    errorMessage: undefined
-}
+const productAdapter = createEntityAdapter<Product>()
+const initialState = productAdapter.getInitialState<ProductSliceState>({
+    errorMessage: undefined,
+    validationState: undefined
+})
+
+const filledInitialState = productAdapter.upsertMany(initialState, initialProducts)
 
 // THE SLICE - a part of your entire redux state
 const productsSlice = createSlice({
     name: "products", // for the dev tools
-    initialState, // what your store's slice begins with
+    initialState: filledInitialState, // what your store's slice begins with
 
     // reducers are simply functions which return new state based on an action and its payload
     reducers: {
         addProduct: (state, action: PayloadAction<Product>) => {
-            state.products.push(action.payload)
+            productAdapter.upsertOne(state, action.payload)
         },
-        removeProduct: (state, action: PayloadAction<string>) => ({
-            ...state,
-            products: state.products.filter(product => product.id !== action.payload),
-        })
+        removeProduct: (state, action: PayloadAction<string>) => {
+            productAdapter.removeOne(state, action.payload)
+        }
     },
 
     /* for async stuff 
@@ -64,12 +64,11 @@ const productsSlice = createSlice({
         /* Any thunk we create has 3 ways of resolving an async action: pending, rejection and fulfilling
            builder pattern allows us to return a specific reducer which will fire when one of the 3 actions
            will trigger the slice's store and execute an operation based off of that action */
-        
-        builder.addCase(addProductAsync.fulfilled, (state, action) => ({
-            validationState: ValidationState.Fullfilled,
-            errorMessage: undefined,
-            products: [...state.products, action.payload]
-        }))
+        builder.addCase(addProductAsync.fulfilled, (state, action) => {
+            productAdapter.upsertOne(state, action.payload)
+            state.validationState = ValidationState.Fullfilled
+            state.errorMessage = undefined
+        })
         builder.addCase(addProductAsync.rejected, (state, action) => ({
             ...state,
             validationState: ValidationState.Rejected,
@@ -88,8 +87,16 @@ const productsSlice = createSlice({
 export const { addProduct, removeProduct } = productsSlice.actions
 
 // exporting necessary selectors
-export const getProductsSelector = (state: RootState) => state.products.products
+// export const getProductsSelector = (state: RootState) => state.products.entities
 export const getErrorMessageSelector = (state: RootState) => state.products.errorMessage
+
+export const {
+    selectAll: selectAllProducts,
+    selectById: selectProductById,
+    selectEntities: selectProductEntities,
+    selectIds: selectProductIds,
+    selectTotal: selectTotalProducts
+} = productAdapter.getSelectors<RootState>(state => state.products)
 
 // exporting the reducer in order to bind it with the global state in the store.ts file
 export default productsSlice.reducer
